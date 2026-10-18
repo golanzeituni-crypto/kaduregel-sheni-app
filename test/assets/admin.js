@@ -56,6 +56,7 @@
 
   function loggedOut(msg) {
     token = null;
+    U.cacheDrop(CACHE);
     try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* */ }
     V = null;
     loginScreen(msg);
@@ -67,11 +68,17 @@
     app.innerHTML = '<header class="head"><div><div class="brand">ניהול</div></div><span class="tag">מנהל</span></header><div class="main" aria-busy="true"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
   }
 
+  var CACHE = 'ks_admin_view';
+
   function load() {
     if (!token) { loginScreen(); return; }
-    if (!V) loading();
+    if (!V) {
+      var cached = U.cacheGet(CACHE);
+      if (cached) { V = cached; render(); U.stale(true); } else loading();
+    }
     call('admin').then(function (r) {
-      if (r.ok) { V = r.view; render(); return; }
+      U.stale(false);
+      if (r.ok) { V = r.view; U.cacheSet(CACHE, V); render(); return; }
       if (r.code === 'login') { loggedOut(r.error === 'צריך להתחבר עם Google' ? null : r.error); return; }
       if (!V) app.innerHTML = '<div class="center"><div class="note bad">' + esc(r.error) + '</div><button class="pri" data-a="reload">נסה שוב</button></div>';
       else U.toast(r.error);
@@ -89,6 +96,7 @@
       }
       U.closeSheet();
       V = r.view;
+      U.cacheSet(CACHE, V);
       render();
       if (onOk) onOk(r.result);
       return r;

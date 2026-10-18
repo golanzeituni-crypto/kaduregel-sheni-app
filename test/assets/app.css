@@ -83,6 +83,7 @@ textarea{width:100%;min-height:140px;font-family:var(--body);font-size:14px;bord
 .err{color:var(--danger);font-size:13px}
 .toast{position:fixed;inset-inline:16px;margin-inline:auto;max-width:448px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:12px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .toast .undo{background:transparent;color:var(--surface);border:1.5px solid var(--surface);min-height:38px;flex:none}
+.busy.soft{background:var(--sunk);color:var(--muted);padding:6px 14px;font-size:13px;width:max-content;max-width:calc(100% - 32px)}
 .busy{position:fixed;inset-inline:16px;margin-inline:auto;max-width:448px;top:calc(12px + env(safe-area-inset-top,0px));z-index:31;background:var(--warn-bg);color:var(--warn-ink);border-radius:12px;padding:10px 14px;font-size:14px;text-align:center}
 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center}
 .skel{background:linear-gradient(90deg,var(--sunk),var(--line),var(--sunk));background-size:200% 100%;border-radius:14px;min-height:110px}

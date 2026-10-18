@@ -119,12 +119,18 @@
 
   // ---------- פעולות ----------
 
+  function cacheKey() { return 'ks_view_' + String(code).slice(0, 12); }
+
   function load() {
     if (!code) { noAccess(); return; }
-    if (!V) loading();
+    if (!V) {
+      var cached = U.cacheGet(cacheKey());
+      if (cached) { V = cached; render(); U.stale(true); } else loading();
+    }
     call('me').then(function (r) {
-      if (r.ok) { V = r.view; render(); return; }
-      if (r.code === 'noAccess') { noAccess(); return; }
+      U.stale(false);
+      if (r.ok) { V = r.view; U.cacheSet(cacheKey(), V); render(); return; }
+      if (r.code === 'noAccess') { U.cacheDrop(cacheKey()); V = null; noAccess(); return; }
       if (!V) failed(r.error); else U.toast(r.error);
     });
   }
@@ -141,6 +147,7 @@
       }
       U.closeSheet();
       V = r.view;
+      U.cacheSet(cacheKey(), V);
       render();
       if (onOk) onOk(r.result);
       return r;

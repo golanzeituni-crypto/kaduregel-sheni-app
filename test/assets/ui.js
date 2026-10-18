@@ -65,11 +65,36 @@
     host.innerHTML = msg ? '<div class="busy" role="status">' + esc(msg) + '</div>' : '';
   }
 
-  /** נועל את כל הכפתורים בזמן שמירה. מחזיר פונקציה לשחרור. */
+  // הכפתור האחרון שנלחץ: עליו מופיע "שומר..." בזמן השמירה
+  var pressed = null;
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('button'); if (b) pressed = b; }, true);
+
+  /** נועל את כל הכפתורים בזמן שמירה, ומציג "שומר..." על הכפתור שנלחץ. מחזיר פונקציה לשחרור. */
   function lock() {
     var bs = Array.prototype.slice.call(document.querySelectorAll('button:not([disabled])'));
     bs.forEach(function (b) { b.disabled = true; });
-    return function () { bs.forEach(function (b) { b.disabled = false; }); };
+    var p = pressed && document.body.contains(pressed) ? pressed : null, label = p ? p.innerHTML : null;
+    if (p) p.textContent = 'שומר...';
+    return function () {
+      bs.forEach(function (b) { b.disabled = false; });
+      if (p && document.body.contains(p)) p.innerHTML = label;
+    };
+  }
+
+  // ---------- המצב האחרון שנשמר בטלפון: פתיחה מיידית, ורענון ברקע ----------
+  var CACHE_DAYS = 7;
+  function cacheGet(key) {
+    try {
+      var c = JSON.parse(localStorage.getItem(key) || 'null');
+      return c && Date.now() - c.t < CACHE_DAYS * 864e5 ? c.v : null;
+    } catch (e) { return null; }
+  }
+  function cacheSet(key, v) { try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: v })); } catch (e) { /* מקום מלא / פרטיות */ } }
+  function cacheDrop(key) { try { localStorage.removeItem(key); } catch (e) { /* */ } }
+  /** פס עדין "מתעדכן..." בזמן שמוצג המצב השמור ומחכים לשרת. */
+  function stale(on) {
+    var host = layer('stale-layer');
+    host.innerHTML = on ? '<div class="busy soft" role="status">מתעדכן...</div>' : '';
   }
 
   function bars(n, max) {
@@ -89,5 +114,6 @@
     else fallback();
   }
 
-  root.KSUI = { openSheet: openSheet, closeSheet: closeSheet, sheetError: sheetError, confirmSheet: confirmSheet, toast: toast, busy: busy, lock: lock, bars: bars, copyText: copyText };
+  root.KSUI = { openSheet: openSheet, closeSheet: closeSheet, sheetError: sheetError, confirmSheet: confirmSheet, toast: toast, busy: busy, lock: lock, bars: bars, copyText: copyText,
+    cacheGet: cacheGet, cacheSet: cacheSet, cacheDrop: cacheDrop, stale: stale };
 })(window);
