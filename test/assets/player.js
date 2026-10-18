@@ -46,7 +46,7 @@
   }
 
   // טווח השעות בכיוון שמאל-לימין, אחרת בשורה עברית הוא מתהפך ל-"23:00–21:00"
-  function gameTitle(g) { return esc(g.label) + ' · <span dir="ltr">' + W.hhmm(g.times.start) + '–' + W.hhmm(g.times.end) + '</span>'; }
+  function gameTitle(g) { return esc(g.label) + ' · <span dir="ltr" style="white-space:nowrap">' + W.hhmm(g.times.start) + '–' + W.hhmm(g.times.end) + '</span>'; }
 
   function nextCard(n, isNext) {
     if (!n) return '';
