@@ -92,9 +92,9 @@
   function cacheSet(key, v) { try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: v })); } catch (e) { /* מקום מלא / פרטיות */ } }
   function cacheDrop(key) { try { localStorage.removeItem(key); } catch (e) { /* */ } }
   /** פס עדין "מתעדכן..." בזמן שמוצג המצב השמור ומחכים לשרת. */
-  function stale(on) {
+  function stale(on, text) {
     var host = layer('stale-layer');
-    host.innerHTML = on ? '<div class="busy soft" role="status">מתעדכן...</div>' : '';
+    host.innerHTML = on ? '<div class="busy soft" role="status">' + esc(text || 'מתעדכן...') + '</div>' : '';
   }
 
   function bars(n, max) {
