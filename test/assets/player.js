@@ -135,13 +135,21 @@
     });
   }
 
-  /** שולח פעולה, נועל כפתורים בזמן השמירה, ומעדכן את המסך מהתשובה. */
+  /** שולח פעולה ומעדכן את המסך מהתשובה. רישום וביטול: המסך מתעדכן מיד (חיזוי), והתשובה מחליפה אותו. */
+  var inflight = false;
   function act(action, args, onOk) {
-    var unlock = U.lock();
+    if (inflight) { U.toast('רגע, עוד שומר...'); return Promise.resolve({ ok: false }); }
+    var prev = V, guess = window.KSOpt.predict(V, action, args), unlock;
+    if (guess) { U.closeSheet(); V = guess; render(); U.stale(true, 'שומר...'); unlock = function () {}; }
+    else unlock = U.lock();
+    inflight = true;
     return call(action, args, { write: true }).then(function (r) {
+      inflight = false;
       unlock();
+      U.stale(false);
       if (!r.ok) {
         if (r.code === 'noAccess') { noAccess(); return r; }
+        if (guess) { V = prev; render(); U.toast(r.error); return r; }
         if (document.querySelector('#sheet-layer .err')) U.sheetError(r.error); else U.toast(r.error);
         return r;
       }

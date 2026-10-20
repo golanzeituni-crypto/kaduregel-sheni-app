@@ -85,12 +85,27 @@
     });
   }
 
+  /** שולח פעולה ומעדכן את המסך מהתשובה. רישום וביטול: המסך מתעדכן מיד (חיזוי), והתשובה מחליפה אותו. */
+  var inflight = false;
   function act(action, args, onOk) {
-    var unlock = U.lock();
+    if (inflight) { U.toast('רגע, עוד שומר...'); return Promise.resolve({ ok: false }); }
+    // רישום/ביטול של המנהל כשחקן: חיזוי על "אני כשחקן" ועל כרטיס המשחק
+    var prev = V, gm = (action === 'register' || action === 'cancel') && V.me ? window.KSOpt.predict(V.me, action, args) : null, unlock;
+    if (gm) {
+      U.closeSheet();
+      V = Object.assign({}, V, { me: gm, game: gm.game });
+      render();
+      U.stale(true, 'שומר...');
+      unlock = function () {};
+    } else unlock = U.lock();
+    inflight = true;
     return call(action, args, { write: true }).then(function (r) {
+      inflight = false;
       unlock();
+      U.stale(false);
       if (!r.ok) {
         if (r.code === 'login') { loggedOut('פג תוקף ההתחברות. התחבר שוב'); return r; }
+        if (gm) { V = prev; render(); U.toast(r.error); return r; }
         if (document.querySelector('#sheet-layer .err')) U.sheetError(r.error); else U.toast(r.error);
         return r;
       }
@@ -135,7 +150,11 @@
           + '<div style="display:flex;gap:6px"><button class="sm dng" data-a="reject" data-i="' + p.id + '" aria-label="דחה את התשלום של ' + esc(p.name) + '">דחה</button><button class="sm pri" data-a="approve" data-i="' + p.id + '">אשר</button></div></div>';
       }).join('') : '<div class="sub">אין תשלומים ממתינים</div>') + '</div></section>';
     html += meCard();
-    if (V.cancelled) html += '<div class="note bad">משחק ' + esc(V.cancelled.label) + ' בוטל. הקרדיטים הוחזרו לכל הנרשמים.</div>';
+    if (V.cancelled) {
+      var canRestore = V.days.some(function (d) { return d.date === V.cancelled.date && d.canRestore; });
+      html += '<div class="note bad split"><span>משחק ' + esc(V.cancelled.label) + ' בוטל. הקרדיטים הוחזרו לכל הנרשמים.</span>'
+        + (canRestore ? '<button class="sm" data-a="restoreGame" data-d="' + V.cancelled.date + '">החזר את המשחק</button>' : '') + '</div>';
+    }
     if (g) {
       var live = g.phase === 'closed' || g.phase === 'open' || g.phase === 'locked';
       html += '<section class="card" aria-label="המשחק הקרוב"><div class="row"><div class="strong">' + esc(g.label) + ' · ' + g.counts.total + '/' + g.capacity + ' במגרש</div><span class="sub">דד-ליין ' + W.hhmm(g.times.deadline) + '</span></div>'
@@ -205,10 +224,17 @@
     V.days.forEach(function (d) {
       var m = +d.date.split('-')[1] - 1;
       if (m !== month) { if (month !== -1) html += '</div>'; month = m; html += '<div class="lbl strong" style="margin-top:6px">' + MONTHS[m] + ' ' + d.date.slice(0, 4) + '</div><div class="list">'; }
-      var btn = d.canSkip || d.skipped
-        ? '<button class="sm ' + (d.skipped ? 'dng' : 'quiet') + '" data-a="skip" data-d="' + d.date + '" data-s="' + (d.skipped ? '0' : '1') + '" aria-pressed="' + d.skipped + '">' + (d.skipped ? 'החזר משחק' : 'אין משחק') + '</button>'
-        : '<span class="sub">הרישום נפתח</span>';
-      html += '<div class="it"><div><div class="mid">' + esc(d.label) + (d.isNext ? ' <span class="pill ok">המשחק הבא</span>' : '') + '</div><div class="sub">' + (d.skipped ? 'אין משחק' : 'משחק רגיל') + '</div></div>' + btn + '</div>';
+      var btn, state;
+      if (d.cancelled) {
+        state = '<span class="pill bad">בוטל</span>';
+        btn = d.canRestore ? '<button class="sm" data-a="restoreGame" data-d="' + d.date + '">החזר את המשחק</button>' : '';
+      } else {
+        state = d.skipped ? 'אין משחק (חג / צום)' : 'משחק רגיל';
+        btn = d.canSkip || d.skipped
+          ? '<button class="sm ' + (d.skipped ? 'dng' : 'quiet') + '" data-a="skip" data-d="' + d.date + '" data-s="' + (d.skipped ? '0' : '1') + '" aria-pressed="' + d.skipped + '">' + (d.skipped ? 'החזר משחק' : 'אין משחק') + '</button>'
+          : '<span class="sub">הרישום נפתח</span>';
+      }
+      html += '<div class="it"><div><div class="mid">' + esc(d.label) + (d.isNext ? ' <span class="pill ok">המשחק הבא</span>' : '') + '</div><div class="sub">' + state + '</div></div>' + btn + '</div>';
     });
     return html + '</div></section>';
   }
@@ -462,6 +488,11 @@
     if (a === 'skip') {
       var d = b.getAttribute('data-d'), on = b.getAttribute('data-s') === '1';
       act('setSkipDate', { date: d, skip: on }, function () { U.toast(on ? 'שני ' + W.ymdLabel(d) + ' מסומן כדילוג. לא ייפתח בו רישום.' : 'שני ' + W.ymdLabel(d) + ' חזר להיות יום משחק'); });
+    }
+    if (a === 'restoreGame') {
+      var rd = b.getAttribute('data-d');
+      U.confirmSheet({ title: 'להחזיר את המשחק של ' + W.ymdLabel(rd) + '?', text: 'המשחק ייפתח מחדש. הרישומים הקודמים לא חוזרים: כולם כבר קיבלו את הקרדיט בחזרה, ומי שהיה רשום יקבל מייל שצריך להירשם מחדש.', ok: 'כן, החזר את המשחק' })
+        .then(function (y) { if (y) act('restoreGame', { date: rd }, function (res) { U.toast('המשחק חזר. ' + res.notified + ' שחקנים קיבלו מייל להירשם מחדש.'); }); });
     }
     if (a === 'expense') expenseSheet();
     if (a === 'recon') amountSheet('התאמה מול פייבוקס', 'יתרה באפליקציה: ' + W.nis(V.cash.balance) + '. הקלד את היתרה שמופיעה עכשיו בפייבוקס. אם יש הפרש, הוא יירשם כתנועת התאמה.', 'יתרה בפייבוקס ב-₪', 'reconcile',
