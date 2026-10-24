@@ -365,9 +365,25 @@
     var box = U.openSheet('<h2 class="h">' + esc(p.name) + '</h2><div class="list"><div class="it"><span class="sub">טלפון</span><span dir="ltr">' + esc(p.phone || 'לא הוזן') + '</span></div><div class="it"><span class="sub">מייל</span><span dir="ltr">' + esc(p.email || 'לא הוזן') + '</span></div><div class="it"><span class="sub">יתרה</span><b>' + p.balance + ' כניסות</b></div><div class="it"><span class="sub">לקח גופיות</span><span>' + p.shirtCount + ' פעמים</span></div></div>'
       + (tr.length ? '<div class="strong">העברות קרדיט</div><div class="list">' + tr.map(transferRow).join('') + '</div>' : '')
       + '<div class="btns">' + (p.isAdmin ? '' : '<button class="pri" data-a="link" data-p="' + pid + '">שלח קישור בווטסאפ</button>') + '<button data-a="manual" data-p="' + pid + '">פתח כרטיסייה</button></div>'
+      + '<div class="btns"><button class="quiet" data-a="editPlayer" data-p="' + pid + '">ערוך פרטים</button></div>'
       + (p.isAdmin ? '' : '<div class="btns"><button class="quiet" data-a="newLink" data-p="' + pid + '">צור קישור חדש</button><button class="dng" data-a="remove" data-p="' + pid + '">הסר מהקבוצה</button></div>')
       + '<div class="btns"><button data-x>סגור</button></div>');
     box.querySelector('[data-x]').onclick = U.closeSheet;
+  }
+
+  function editPlayerSheet(pid) {
+    var p = findPlayer(pid);
+    var box = U.openSheet('<h2 class="h">עריכת פרטים: ' + esc(p.name) + '</h2>'
+      + '<label class="field">שם<input id="ename" type="text" autocomplete="off" value="' + esc(p.name) + '"></label>'
+      + '<label class="field">טלפון<input id="ephone" type="tel" inputmode="tel" autocomplete="off" dir="ltr" value="' + esc(p.phone || '') + '"></label>'
+      + '<label class="field">מייל, להתראות<input id="eemail" type="email" inputmode="email" autocomplete="off" dir="ltr" value="' + esc(p.email || '') + '"></label>'
+      + '<div class="sub">היתרה, הרישומים וההיסטוריה לא משתנים. הקישור האישי ממשיך לעבוד.</div>'
+      + '<div class="err" role="alert" style="display:none"></div><div class="btns"><button data-x>חזרה</button><button class="pri" data-ok>שמור</button></div>');
+    box.querySelector('[data-x]').onclick = U.closeSheet;
+    box.querySelector('[data-ok]').onclick = function () {
+      act('updatePlayer', { playerId: pid, name: box.querySelector('#ename').value, phone: box.querySelector('#ephone').value, email: box.querySelector('#eemail').value.trim() },
+        function (res) { U.toast(res.changed.length ? 'הפרטים עודכנו' : 'לא היה שינוי'); });
+    };
   }
 
   function addPlayerSheet() {
@@ -474,6 +490,7 @@
     if (a === 'addPlayer') addPlayerSheet();
     if (a === 'player') playerSheet(pid);
     if (a === 'link') { U.closeSheet(); linkSheet(pid); }
+    if (a === 'editPlayer') { U.closeSheet(); editPlayerSheet(pid); }
     if (a === 'newLink') {
       var p1 = findPlayer(pid);
       U.confirmSheet({ title: 'ליצור קישור חדש ל' + p1.name + '?', text: 'הקישור הנוכחי יפסיק לעבוד מיד. תצטרך לשלוח ל' + p1.name + ' את הקישור החדש. השתמש בזה אם הקישור דלף או שהוחלף טלפון.', ok: 'צור קישור חדש', danger: true })
