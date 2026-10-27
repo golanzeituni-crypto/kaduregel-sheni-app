@@ -504,7 +504,8 @@
     if (a === 'restore') act('restorePlayer', { playerId: pid }, function () { U.toast(findPlayer(pid).name + ' חזר לקבוצה. שלח לו את הקישור החדש.'); linkSheet(pid); });
     if (a === 'skip') {
       var d = b.getAttribute('data-d'), on = b.getAttribute('data-s') === '1';
-      act('setSkipDate', { date: d, skip: on }, function () { U.toast(on ? 'שני ' + W.ymdLabel(d) + ' מסומן כדילוג. לא ייפתח בו רישום.' : 'שני ' + W.ymdLabel(d) + ' חזר להיות יום משחק'); });
+      var dl = (V.days.filter(function (x) { return x.date === d; })[0] || { label: W.ymdLabel(d) }).label;
+      act('setSkipDate', { date: d, skip: on }, function () { U.toast(on ? dl + ' מסומן כדילוג. לא ייפתח בו רישום.' : dl + ' חזר להיות יום משחק'); });
     }
     if (a === 'restoreGame') {
       var rd = b.getAttribute('data-d');
