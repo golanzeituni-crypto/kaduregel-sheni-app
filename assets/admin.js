@@ -142,6 +142,15 @@
       + '<div class="note ok">הרישום ייפתח אוטומטית ב' + esc(W.dayAt(n.opensAt)) + '.</div></section>';
   }
 
+  /** משחק שעבר ולא בוטל בזמן: אפשר לסמן שלא התקיים ולהחזיר את הכניסות. */
+  function notHeldCard() {
+    var n = V.notHeld;
+    if (!n) return '';
+    return '<section class="card" aria-label="המשחק האחרון"><div class="lbl">המשחק האחרון</div><div class="row"><div class="h">' + esc(n.label) + '</div><span class="sub">' + n.paid + ' כניסות ירדו</span></div>'
+      + '<div class="sub">המשחק לא התקיים ושכחת לבטל אותו? אפשר להחזיר לכל הנרשמים את הכניסה, עד שבוע אחרי המשחק.</div>'
+      + '<div class="btns"><button class="dng" data-a="notHeld" data-d="' + n.date + '">המשחק לא התקיים</button></div></section>';
+  }
+
   function homeTab() {
     var pend = pendingList(), g = V.game;
     var html = '<section class="card" aria-label="תשלומים לאישור"><div class="row"><div class="strong">תשלומים לאישור</div>' + (pend.length ? '<span class="pill warn">' + pend.length + '</span>' : '') + '</div><div class="list">'
@@ -163,7 +172,7 @@
         + (g.wait.length ? '<div class="sub">בהמתנה: ' + g.wait.map(function (r, i) { return (i + 1) + '. ' + esc(r.label); }).join(' · ') + '</div>' : '')
         + '<div class="btns"><button class="pri" data-a="wa">העתק לווטסאפ</button>' + (live ? '<button class="dng" data-a="cancelGame">בטל משחק</button>' : '') + '</div></section>';
     }
-    html += nextCard(V.next) + gearCard()
+    html += notHeldCard() + nextCard(V.next) + gearCard()
       + '<section class="card" aria-label="קופה"><div class="row"><div class="strong">קופה</div><button class="sm quiet" data-a="tab" data-t="cash">לפירוט</button></div><div class="big">' + W.nis(V.cash.balance) + '</div></section>';
     return html;
   }
@@ -219,6 +228,7 @@
         + (live ? '<div class="sub">הרישום אליו כבר נפתח, ולכן אי אפשר לדלג עליו. כדי לבטל אותו, החזר את הקרדיטים לנרשמים.</div><div class="btns"><button class="dng" data-a="cancelGame">בטל את המשחק הזה</button></div>' : '')
         + '</section>';
     }
+    html += notHeldCard();
     html += '<section class="card" aria-label="תאריכים עתידיים"><div class="strong">חצי השנה הקרובה</div><div class="sub">כל יום משחק הוא משחק כברירת מחדל. סמן "אין משחק" בחגים ובצומות, והרישום לא ייפתח באותו שבוע. השחקנים יראו אוטומטית את התאריך הבא שלא סומן.</div>';
     var month = -1;
     V.days.forEach(function (d) {
@@ -365,9 +375,25 @@
     var box = U.openSheet('<h2 class="h">' + esc(p.name) + '</h2><div class="list"><div class="it"><span class="sub">טלפון</span><span dir="ltr">' + esc(p.phone || 'לא הוזן') + '</span></div><div class="it"><span class="sub">מייל</span><span dir="ltr">' + esc(p.email || 'לא הוזן') + '</span></div><div class="it"><span class="sub">יתרה</span><b>' + p.balance + ' כניסות</b></div><div class="it"><span class="sub">לקח גופיות</span><span>' + p.shirtCount + ' פעמים</span></div></div>'
       + (tr.length ? '<div class="strong">העברות קרדיט</div><div class="list">' + tr.map(transferRow).join('') + '</div>' : '')
       + '<div class="btns">' + (p.isAdmin ? '' : '<button class="pri" data-a="link" data-p="' + pid + '">שלח קישור בווטסאפ</button>') + '<button data-a="manual" data-p="' + pid + '">פתח כרטיסייה</button></div>'
+      + '<div class="btns"><button class="quiet" data-a="editPlayer" data-p="' + pid + '">ערוך פרטים</button></div>'
       + (p.isAdmin ? '' : '<div class="btns"><button class="quiet" data-a="newLink" data-p="' + pid + '">צור קישור חדש</button><button class="dng" data-a="remove" data-p="' + pid + '">הסר מהקבוצה</button></div>')
       + '<div class="btns"><button data-x>סגור</button></div>');
     box.querySelector('[data-x]').onclick = U.closeSheet;
+  }
+
+  function editPlayerSheet(pid) {
+    var p = findPlayer(pid);
+    var box = U.openSheet('<h2 class="h">עריכת פרטים: ' + esc(p.name) + '</h2>'
+      + '<label class="field">שם<input id="ename" type="text" autocomplete="off" value="' + esc(p.name) + '"></label>'
+      + '<label class="field">טלפון<input id="ephone" type="tel" inputmode="tel" autocomplete="off" dir="ltr" value="' + esc(p.phone || '') + '"></label>'
+      + '<label class="field">מייל, להתראות<input id="eemail" type="email" inputmode="email" autocomplete="off" dir="ltr" value="' + esc(p.email || '') + '"></label>'
+      + '<div class="sub">היתרה, הרישומים וההיסטוריה לא משתנים. הקישור האישי ממשיך לעבוד.</div>'
+      + '<div class="err" role="alert" style="display:none"></div><div class="btns"><button data-x>חזרה</button><button class="pri" data-ok>שמור</button></div>');
+    box.querySelector('[data-x]').onclick = U.closeSheet;
+    box.querySelector('[data-ok]').onclick = function () {
+      act('updatePlayer', { playerId: pid, name: box.querySelector('#ename').value, phone: box.querySelector('#ephone').value, email: box.querySelector('#eemail').value.trim() },
+        function (res) { U.toast(res.changed.length ? 'הפרטים עודכנו' : 'לא היה שינוי'); });
+    };
   }
 
   function addPlayerSheet() {
@@ -474,6 +500,7 @@
     if (a === 'addPlayer') addPlayerSheet();
     if (a === 'player') playerSheet(pid);
     if (a === 'link') { U.closeSheet(); linkSheet(pid); }
+    if (a === 'editPlayer') { U.closeSheet(); editPlayerSheet(pid); }
     if (a === 'newLink') {
       var p1 = findPlayer(pid);
       U.confirmSheet({ title: 'ליצור קישור חדש ל' + p1.name + '?', text: 'הקישור הנוכחי יפסיק לעבוד מיד. תצטרך לשלוח ל' + p1.name + ' את הקישור החדש. השתמש בזה אם הקישור דלף או שהוחלף טלפון.', ok: 'צור קישור חדש', danger: true })
@@ -487,12 +514,18 @@
     if (a === 'restore') act('restorePlayer', { playerId: pid }, function () { U.toast(findPlayer(pid).name + ' חזר לקבוצה. שלח לו את הקישור החדש.'); linkSheet(pid); });
     if (a === 'skip') {
       var d = b.getAttribute('data-d'), on = b.getAttribute('data-s') === '1';
-      act('setSkipDate', { date: d, skip: on }, function () { U.toast(on ? 'שני ' + W.ymdLabel(d) + ' מסומן כדילוג. לא ייפתח בו רישום.' : 'שני ' + W.ymdLabel(d) + ' חזר להיות יום משחק'); });
+      var dl = (V.days.filter(function (x) { return x.date === d; })[0] || { label: W.ymdLabel(d) }).label;
+      act('setSkipDate', { date: d, skip: on }, function () { U.toast(on ? dl + ' מסומן כדילוג. לא ייפתח בו רישום.' : dl + ' חזר להיות יום משחק'); });
     }
     if (a === 'restoreGame') {
       var rd = b.getAttribute('data-d');
       U.confirmSheet({ title: 'להחזיר את המשחק של ' + W.ymdLabel(rd) + '?', text: 'המשחק ייפתח מחדש. הרישומים הקודמים לא חוזרים: כולם כבר קיבלו את הקרדיט בחזרה, ומי שהיה רשום יקבל מייל שצריך להירשם מחדש.', ok: 'כן, החזר את המשחק' })
         .then(function (y) { if (y) act('restoreGame', { date: rd }, function (res) { U.toast('המשחק חזר. ' + res.notified + ' שחקנים קיבלו מייל להירשם מחדש.'); }); });
+    }
+    if (a === 'notHeld') {
+      var nd = b.getAttribute('data-d');
+      U.confirmSheet({ title: 'המשחק של ' + W.ymdLabel(nd) + ' לא התקיים?', text: 'כל מי שירדה לו כניסה על המשחק הזה, כולל אורחים, יקבל אותה בחזרה ומייל. המשחק יסומן כמבוטל.', ok: 'כן, החזר את הכניסות', danger: true })
+        .then(function (y) { if (y) act('cancelPastGame', { date: nd }, function (res) { U.toast('הכניסות הוחזרו. ' + res.notified + ' שחקנים קיבלו מייל.'); }); });
     }
     if (a === 'expense') expenseSheet();
     if (a === 'recon') amountSheet('התאמה מול פייבוקס', 'יתרה באפליקציה: ' + W.nis(V.cash.balance) + '. הקלד את היתרה שמופיעה עכשיו בפייבוקס. אם יש הפרש, הוא יירשם כתנועת התאמה.', 'יתרה בפייבוקס ב-₪', 'reconcile',
