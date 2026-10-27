@@ -142,6 +142,15 @@
       + '<div class="note ok">הרישום ייפתח אוטומטית ב' + esc(W.dayAt(n.opensAt)) + '.</div></section>';
   }
 
+  /** משחק שעבר ולא בוטל בזמן: אפשר לסמן שלא התקיים ולהחזיר את הכניסות. */
+  function notHeldCard() {
+    var n = V.notHeld;
+    if (!n) return '';
+    return '<section class="card" aria-label="המשחק האחרון"><div class="lbl">המשחק האחרון</div><div class="row"><div class="h">' + esc(n.label) + '</div><span class="sub">' + n.paid + ' כניסות ירדו</span></div>'
+      + '<div class="sub">המשחק לא התקיים ושכחת לבטל אותו? אפשר להחזיר לכל הנרשמים את הכניסה, עד שבוע אחרי המשחק.</div>'
+      + '<div class="btns"><button class="dng" data-a="notHeld" data-d="' + n.date + '">המשחק לא התקיים</button></div></section>';
+  }
+
   function homeTab() {
     var pend = pendingList(), g = V.game;
     var html = '<section class="card" aria-label="תשלומים לאישור"><div class="row"><div class="strong">תשלומים לאישור</div>' + (pend.length ? '<span class="pill warn">' + pend.length + '</span>' : '') + '</div><div class="list">'
@@ -163,7 +172,7 @@
         + (g.wait.length ? '<div class="sub">בהמתנה: ' + g.wait.map(function (r, i) { return (i + 1) + '. ' + esc(r.label); }).join(' · ') + '</div>' : '')
         + '<div class="btns"><button class="pri" data-a="wa">העתק לווטסאפ</button>' + (live ? '<button class="dng" data-a="cancelGame">בטל משחק</button>' : '') + '</div></section>';
     }
-    html += nextCard(V.next) + gearCard()
+    html += notHeldCard() + nextCard(V.next) + gearCard()
       + '<section class="card" aria-label="קופה"><div class="row"><div class="strong">קופה</div><button class="sm quiet" data-a="tab" data-t="cash">לפירוט</button></div><div class="big">' + W.nis(V.cash.balance) + '</div></section>';
     return html;
   }
@@ -219,6 +228,7 @@
         + (live ? '<div class="sub">הרישום אליו כבר נפתח, ולכן אי אפשר לדלג עליו. כדי לבטל אותו, החזר את הקרדיטים לנרשמים.</div><div class="btns"><button class="dng" data-a="cancelGame">בטל את המשחק הזה</button></div>' : '')
         + '</section>';
     }
+    html += notHeldCard();
     html += '<section class="card" aria-label="תאריכים עתידיים"><div class="strong">חצי השנה הקרובה</div><div class="sub">כל יום משחק הוא משחק כברירת מחדל. סמן "אין משחק" בחגים ובצומות, והרישום לא ייפתח באותו שבוע. השחקנים יראו אוטומטית את התאריך הבא שלא סומן.</div>';
     var month = -1;
     V.days.forEach(function (d) {
@@ -511,6 +521,11 @@
       var rd = b.getAttribute('data-d');
       U.confirmSheet({ title: 'להחזיר את המשחק של ' + W.ymdLabel(rd) + '?', text: 'המשחק ייפתח מחדש. הרישומים הקודמים לא חוזרים: כולם כבר קיבלו את הקרדיט בחזרה, ומי שהיה רשום יקבל מייל שצריך להירשם מחדש.', ok: 'כן, החזר את המשחק' })
         .then(function (y) { if (y) act('restoreGame', { date: rd }, function (res) { U.toast('המשחק חזר. ' + res.notified + ' שחקנים קיבלו מייל להירשם מחדש.'); }); });
+    }
+    if (a === 'notHeld') {
+      var nd = b.getAttribute('data-d');
+      U.confirmSheet({ title: 'המשחק של ' + W.ymdLabel(nd) + ' לא התקיים?', text: 'כל מי שירדה לו כניסה על המשחק הזה, כולל אורחים, יקבל אותה בחזרה ומייל. המשחק יסומן כמבוטל.', ok: 'כן, החזר את הכניסות', danger: true })
+        .then(function (y) { if (y) act('cancelPastGame', { date: nd }, function (res) { U.toast('הכניסות הוחזרו. ' + res.notified + ' שחקנים קיבלו מייל.'); }); });
     }
     if (a === 'expense') expenseSheet();
     if (a === 'recon') amountSheet('התאמה מול פייבוקס', 'יתרה באפליקציה: ' + W.nis(V.cash.balance) + '. הקלד את היתרה שמופיעה עכשיו בפייבוקס. אם יש הפרש, הוא יירשם כתנועת התאמה.', 'יתרה בפייבוקס ב-₪', 'reconcile',
