@@ -29,7 +29,7 @@
   // ---------- התחברות ----------
 
   function loginScreen(msg) {
-    app.innerHTML = '<header class="head"><div><div class="brand">ניהול</div><div class="hello">כדורגל שני</div></div><span class="tag">מנהל</span></header>'
+    app.innerHTML = '<header class="head"><div><div class="brand">ניהול</div><div class="hello">כדורגל שבועי</div></div><span class="tag">מנהל</span></header>'
       + '<div class="center"><h1 class="h">כניסת מנהל</h1><div class="sub">כניסה עם חשבון הגוגל של המנהל בלבד.</div>'
       + (msg ? '<div class="note bad">' + esc(msg) + '</div>' : '') + '<div id="gbtn"></div></div>';
     whenGoogle(function () {

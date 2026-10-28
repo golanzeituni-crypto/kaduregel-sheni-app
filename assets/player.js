@@ -26,16 +26,16 @@
   // ---------- תצוגה ----------
 
   function noAccess() {
-    app.innerHTML = '<header class="head"><div><div class="brand">כדורגל שני</div></div></header><div class="main"><section class="card" aria-label="אין גישה"><h1 class="h">אין גישה</h1>'
+    app.innerHTML = '<header class="head"><div><div class="brand">כדורגל שבועי</div></div></header><div class="main"><section class="card" aria-label="אין גישה"><h1 class="h">אין גישה</h1>'
       + '<div class="note">הקישור הזה לא תקין או שכבר לא בתוקף. כדי להצטרף למשחקים, פנה לגולן ובקש קישור אישי.</div></section></div>';
   }
 
   function loading() {
-    app.innerHTML = '<header class="head"><div><div class="brand">כדורגל שני</div></div></header><div class="main" aria-busy="true"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
+    app.innerHTML = '<header class="head"><div><div class="brand">כדורגל שבועי</div></div></header><div class="main" aria-busy="true"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
   }
 
   function failed(msg) {
-    app.innerHTML = '<header class="head"><div><div class="brand">כדורגל שני</div></div></header><div class="center"><div class="note bad">' + esc(msg) + '</div><button class="pri" data-a="reload">נסה שוב</button></div>';
+    app.innerHTML = '<header class="head"><div><div class="brand">כדורגל שבועי</div></div></header><div class="center"><div class="note bad">' + esc(msg) + '</div><button class="pri" data-a="reload">נסה שוב</button></div>';
   }
 
   function phasePill(ph) {
@@ -58,7 +58,7 @@
   function render() {
     var v = V, me = v.me, g = v.game, s = v.settings;
     var mine = v.myRegs, meReg = mine.filter(function (r) { return !r.guest; })[0];
-    var html = '<header class="head"><div><div class="brand">כדורגל שני</div><div class="hello">שלום ' + esc(me.name) + '</div></div><span class="tag">שחקן</span></header><div class="main">';
+    var html = '<header class="head"><div><div class="brand">כדורגל שבועי</div><div class="hello">שלום ' + esc(me.name) + '</div></div><span class="tag">שחקן</span></header><div class="main">';
 
     // הודעות
     if (v.cancelled) html += '<div class="note bad">משחק ' + esc(v.cancelled.label) + ' בוטל. הקרדיט של כל הנרשמים חזר לכרטיסייה.</div>';
